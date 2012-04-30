@@ -1,0 +1,2 @@
+Custom plugin for monitoring number of errored SWF executions (includes
+status: failed, terminated and timed_out).
