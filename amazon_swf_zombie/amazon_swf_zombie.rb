@@ -54,8 +54,10 @@ class AmazonSWFZombie < Scout::Plugin
     zombie_workflows = 0
     total_workflows=0
     domain.workflow_executions.each(:status => :open) do |execution|
-     zombie_workflows +=1 if (Time.now.to_i - execution.started_at.to_i) > @max_run_time
-     total_workflows +=1
+      unless execution.workflow_id.start_with? 'Cron'
+        zombie_workflows +=1 if (Time.now.to_i - execution.started_at.to_i) > @max_run_time
+        total_workflows +=1
+      end
     end
 
     report( :zombie_workflows => zombie_workflows )
