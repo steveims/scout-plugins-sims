@@ -23,9 +23,9 @@ class AmazonSWFErrored < Scout::Plugin
   EOS
   
   def init
-    @access_key = option('access_key') or return error('access_key cannot be empty')
-    @secret_key = option('secret_key') or return error('secret_key cannot be empty')
-    @swf_domain = option('swf_domain') or return error('swf_domain cannot be empty')
+    @access_key = option('access_key').strip or return error('access_key cannot be empty')
+    @secret_key = option('secret_key').strip or return error('secret_key cannot be empty')
+    @swf_domain = option('swf_domain').strip or return error('swf_domain cannot be empty')
 
     # SWF results are eventually consistent.  interval_rescan is a means to
     # recheck for late updates.
