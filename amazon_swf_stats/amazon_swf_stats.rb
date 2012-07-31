@@ -59,7 +59,7 @@ class AmazonSWFStats < Scout::Plugin
       swf = AWS::SimpleWorkflow.new
       domain = swf.domains[@swf_domain]
 
-      counts = Hash.new()
+      counts = Hash.new(0)
       [:open, 
        :closed, 
        :completed, 
