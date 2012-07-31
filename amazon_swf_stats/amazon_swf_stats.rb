@@ -59,7 +59,20 @@ class AmazonSWFStats < Scout::Plugin
       swf = AWS::SimpleWorkflow.new
       domain = swf.domains[@swf_domain]
 
+      
+      # Ensure that the basic keys exist in the cache.
       counts = Hash.new(0)
+      [:open,
+       :closed,
+       :completed,
+       :failed,
+       :canceled,
+       :terminated,
+       :continued,
+       :timed_out].each do |k|
+
+        counts[k] = 0
+      end
 
       # "open" includes all currently open workflows...
       each_options = {
