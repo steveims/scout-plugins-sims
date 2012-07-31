@@ -60,18 +60,8 @@ class AmazonSWFStats < Scout::Plugin
       domain = swf.domains[@swf_domain]
 
       counts = Hash.new(0)
-      [:open, 
-       :closed, 
-       :completed, 
-       :failed, 
-       :canceled, 
-       :terminated, 
-       :continued, 
-       :timed_out].each do |k|
 
-        counts[k] = 0
-      end
-
+      # "open" includes all currently open workflows...
       each_options = {
         :status => :open
       }
@@ -82,6 +72,19 @@ class AmazonSWFStats < Scout::Plugin
         end
       end
 
+      # ... and closed workflows that were started after @last_run
+      each_options = {
+        :status => :closed,
+        :started_after => @last_run
+      }
+      domain.workflow_executions.each( each_options ) do |x|
+        if x.workflow_type.name == @wf_type_name
+          execution_status = x.status
+          counts[:open] = counts[:open]+1
+        end
+      end
+
+      # Log all closed workflows according to their recorded status.
       # Use #each instead of #count to avoid truncation.
       each_options = {
         :status => :closed,
