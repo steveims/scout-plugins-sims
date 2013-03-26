@@ -23,20 +23,9 @@ class AmazonSWFErrored < Scout::Plugin
   EOS
   
   def init
-    @access_key = option('access_key').to_s.strip
-    if @access_key.empty?
-      return error('access_key cannot be empty')
-    end
-    
-    @secret_key = option('secret_key').to_s.strip
-    if @secret_key.empty?
-      return error('secret_key cannot be empty')
-    end
-
-    @swf_domain = option('swf_domain').to_s.strip
-    if @swf_domain.empty?
-      return error('swf_domain cannot be empty')
-    end
+    @access_key = option('access_key').strip or return error('access_key cannot be empty')
+    @secret_key = option('secret_key').strip or return error('secret_key cannot be empty')
+    @swf_domain = option('swf_domain').strip or return error('swf_domain cannot be empty')
 
     # SWF results are eventually consistent.  interval_rescan is a means to
     # recheck for late updates.
@@ -47,12 +36,13 @@ class AmazonSWFErrored < Scout::Plugin
   
   # Scout method
   def build_report
-    return if init()
+    return if init
 
-    if !@last_run
+    epoch = memory(:epoch)
+    unless epoch
       # @last_run is not defined on the first invocation.
       # Use time of first invocation as hard limit: no checks before epoch.
-      remember( :epoch => Time.now )
+      remember :epoch => Time.now 
 
     else
       AWS.config(
@@ -64,12 +54,11 @@ class AmazonSWFErrored < Scout::Plugin
       swf = AWS::SimpleWorkflow.new
       domain = swf.domains[@swf_domain]
 
-      epoch = memory( :epoch )
       cutoff_time = [epoch, @last_run - @interval_rescan].max
 
       # Ensure that each errored workflow is not double counted.
       # key == run_id; value == closed_at
-      failed_workflows = memory( :failed_workflows ) || {}
+      failed_workflows = memory(:failed_workflows)  || {}
 
       # Remove outdated entries from the history.
       failed_workflows.delete_if { |k,v| v < cutoff_time }
@@ -82,9 +71,9 @@ class AmazonSWFErrored < Scout::Plugin
           :status => status, 
           :closed_after => cutoff_time
         }
-        domain.workflow_executions.each( each_options ) do |x|
-          if !failed_workflows.has_key?( x.run_id )
-            failed_workflows[ x.run_id ] = x.closed_at
+        domain.workflow_executions.each( each_options ) do |execution|
+          if !failed_workflows.has_key?( execution.run_id )
+            failed_workflows[ execution.run_id ] = execution.closed_at
             added += 1
           end
         end
