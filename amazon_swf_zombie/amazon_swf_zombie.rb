@@ -32,12 +32,12 @@ class AmazonSWFZombie < Scout::Plugin
     @max_run_time = option('max_run_time').to_i or return error('max_run_time cannot be empty')
     @workflow_types = option('workflow_types') or return error('workflow_types cannot be empty')
     @workflow_types = @workflow_types.split
-    nil
+    true
   end
 
   # Scout method
   def build_report
-    return if init
+    return unless init
 
     AWS.config(
       :access_key_id => @access_key,
@@ -47,12 +47,13 @@ class AmazonSWFZombie < Scout::Plugin
     # http://docs.amazonwebservices.com/AWSRubySDK/latest/frames.html
     swf = AWS::SimpleWorkflow.new
     domain = swf.domains[@swf_domain]
-
     zombie_workflows = {}
+    @workflow_types.each do |type|
+      zombie_workflows[ type.to_sym ] = 0
+    end
     domain.workflow_executions.each(:status => :open) do |execution|
       name = execution.workflow_type.name
       next unless @workflow_types.include? name
-      zombie_workflows[name.to_sym] = 0 unless zombie_workflows[name.to_sym]
       if (Time.now.to_i - execution.started_at.to_i) > @max_run_time
         zombie_workflows[name.to_sym] +=1
       end
